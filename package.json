@@ -1,0 +1,31 @@
+{
+  "name": "communty",
+  "version": "0.0.1",
+  "author": "王岳駿",
+  "description": "部落格加聊天室",
+  "dependencies": {
+    "koa": "^2.5.3",
+    "koa-body": "^4.0.4",
+    "koa-json": "^2.0.2",
+    "koa-logger": "^3.2.0",
+    "koa-router": "^7.4.0",
+    "koa-session": "^5.10.0",
+    "koa-static": "^5.0.0",
+    "mongoose": "^5.3.12",
+    "puppeteer": "^1.9.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^4.0.0",
+    "should": "^13.2.3"
+  },
+  "scripts": {
+    "test": "mocha",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sjkry505/community.git"
+  },
+  "license": "MIT"
+}
