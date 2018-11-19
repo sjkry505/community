@@ -8,13 +8,21 @@ const Koa = require('koa')
 const app = (module.exports = new Koa())
 
 const posts = []
+const users = []
+let account = false
 
 app.use(logger())
 
 app.use(koaBody())
 app.use(koaStatic('./public'))
 
-router.get('/list', list).get('/post/:id', show).post('/post', create)
+router
+  .get('/list', list)
+  .get('/post/:id', show)
+  .post('/login', login)
+  .post('/signup', signup)
+  .post('/post', create)
+  .post('/logout', logout)
 
 app.use(router.routes())
 app.use(koaJson())
@@ -37,7 +45,55 @@ async function create (ctx) {
   const id = posts.push(post) - 1
   post.created_at = new Date()
   post.id = id
+  post.owner = account
+  console.log(post)
+  ctx.status = 200
 }
+
+// user
+
+async function signup (ctx) {
+  let user = JSON.parse(ctx.request.body)
+  for (let i of users) {
+    if (user.account === i.account) {
+      ctx.status = 401
+      return
+    }
+  }
+  users.push(user)
+  ctx.status = 200
+}
+
+async function login (ctx) {
+  let user = JSON.parse(ctx.request.body)
+  for (let i of users) {
+    if (user.account === i.account && user.password === i.password) {
+      ctx.status = 200
+      account = user.account
+      return
+    }
+  }
+  ctx.status = 401
+}
+
+async function logout (ctx) {
+  let user = JSON.parse(ctx.request.body)
+  for (let i of users) {
+    if (user.account === i.account) {
+      account = false
+      ctx.status = 200
+      return
+    }
+  }
+}
+
+// message
+
+// search
+
+// chat
+
+// pair
 
 if (!module.parent) {
   app.listen(3000)
