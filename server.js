@@ -10,6 +10,7 @@ const app = (module.exports = new Koa())
 const posts = []
 const users = []
 let account = false
+let index = 0
 
 app.use(logger())
 
@@ -18,11 +19,12 @@ app.use(koaStatic('./public'))
 
 router
   .get('/list', list)
-  .get('/post/:id', show)
   .post('/login', login)
   .post('/signup', signup)
   .post('/post', create)
   .post('/logout', logout)
+  .post('/edit', edit)
+  .post('/remove', remove)
 
 app.use(router.routes())
 app.use(koaJson())
@@ -33,20 +35,39 @@ async function list (ctx) {
   ctx.body = posts
 }
 
-async function show (ctx) {
-  const id = ctx.params.id
-  const post = posts[id]
-  if (!post) ctx.throw(404, 'invalid post id')
-  ctx.body = post
-}
-
 async function create (ctx) {
-  var post = JSON.parse(ctx.request.body)
-  const id = posts.push(post) - 1
+  let post = JSON.parse(ctx.request.body)
+  const id = index
   post.created_at = new Date()
   post.id = id
   post.owner = account
-  console.log(post)
+  posts.push(post)
+  index++
+  ctx.status = 200
+}
+
+async function edit (ctx) {
+  let post = JSON.parse(ctx.request.body)
+  for (let i of posts) {
+    if (post.id === i.id) {
+      i.body = post.body
+    }
+  }
+  console.log(posts)
+  ctx.status = 200
+}
+
+async function remove (ctx) {
+  let post = JSON.parse(ctx.request.body)
+  for (let i = 0; i < posts.length; i++) {
+    if (posts[i].id === post.id) {
+      posts.splice(i, 1)
+    }
+  }
+  for (let i = post.id; i < posts.length; i++) {
+    posts[i].id = posts[i].id - 1
+  }
+  index--
   ctx.status = 200
 }
 
