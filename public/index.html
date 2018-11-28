@@ -18,17 +18,17 @@
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>                        
             </button>
-            <a class="navbar-brand" onclick="window.onhashchange('')">WebSiteName</a>
+            <a class="navbar-brand" onclick="window.onhashchange('')" style="margin-right:100px">WebSiteName</a>
           </div>
           <div class="collapse navbar-collapse" id="myNavbar">
             <ul class="nav navbar-nav">
-                <form class="navbar-form navbar-left">
-                    <div class="input-group">
-                      <input type="text" class="form-control" placeholder="Search" name="search">
+                <form class="navbar-form navbar-left" style="width:100%;margin:0; padding: 0">
+                    <div class="input-group" style="margin-top:10px;">
+                      <input type="text" class="form-control" placeholder="Search" id="search" autocomplete="off">
                       <div class="input-group-btn">
-                        <button class="btn btn-default" type="submit">
+                        <a class="btn btn-default" type="button" onclick="blog.model.search()">
                           <i class="glyphicon glyphicon-search"></i>
-                        </button>
+                        </a>
                       </div>
                     </div>
                   </form>
@@ -44,9 +44,9 @@
   <section id="alert" class="container" style="position:absolute; top:7%; left:10%;z-index:3"></section>
   <div class="container" style="margin:50px auto 0 auto;width:90%">
     <div class="row">
-      <div class="col-md-2">.col-md-4</div>
+      <div class="col-md-2" id="userlist"></div>
       <div class="col-md-8" id="content"></div>
-      <div class="col-md-2">.col-md-4</div>
+      <div class="col-md-2"></div>
     </div>
   </div>
   <div class="modal fade" id="signupModal" role="dialog">
@@ -60,11 +60,11 @@
           <form>
             <div class="input-group">
               <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-              <input id="name" type="text" class="form-control" name="name" placeholder="name">
+              <input id="name" type="text" class="form-control" name="name" placeholder="name" autocomplete="off">
             </div>
             <div class="input-group">
                 <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-                <input id="account" type="text" class="form-control" name="account" placeholder="account">
+                <input id="account" type="text" class="form-control" name="account" placeholder="account" autocomplete="off">
             </div>
             <div class="input-group">
               <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
@@ -72,7 +72,7 @@
             </div>
             <div class="input-group">
               <span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
-              <input id="birthday" type="date" class="form-control" name="birthday">
+              <input id="birthday" type="date" class="form-control" name="birthday" autocomplete="off">
             </div>
             <input class="btn btn-default" data-dismiss="modal" data-toggle="modal" data-target="#failModal" type="button" onclick="blog.model.signup()" value="Sign Up">
           </form>
@@ -90,7 +90,7 @@
         <div class="modal-body">
           <div class="input-group">
             <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-            <input id="user" type="text" class="form-control" name="account" placeholder="account">
+            <input id="user" type="text" class="form-control" name="account" placeholder="account" autocomplete="off">
           </div>
           <div class="input-group">
             <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
