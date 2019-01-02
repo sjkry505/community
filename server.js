@@ -44,8 +44,8 @@ router
   .post('/signup', signup)
   .post('/post', create)
   .post('/logout', logout)
-  .post('/edit', edit)
-  .post('/remove', remove)
+  .post('/edit/:id', edit)
+  .post('/remove/:id', remove)
   .post('/search', search)
 
 app.use(router.routes())
@@ -87,10 +87,8 @@ async function edit (ctx) {
 }
 
 async function remove (ctx) {
-  let id = JSON.parse(ctx.request.body)
-  let target = await db.findOne('posts', id)
-  await db.remove(target)
-  length--
+  let id = ctx.params.id
+  await db.delete('posts', id)
   ctx.status = 200
 }
 
@@ -123,9 +121,9 @@ async function logout (ctx) {
 }
 
 async function logined (ctx) {
-  if (ctx.session !== null) {
+  if (ctx.session.user !== null) {
     ctx.status = 200
-    ctx.body = ctx.session.user
+    ctx.body = {'user': ctx.session.user}
   } else ctx.status = 401
 }
 
@@ -142,7 +140,7 @@ async function getuser (ctx) {
 
 async function search (ctx) {
   let target = JSON.parse(ctx.request.body)
-  let users = await db.search('users', {'account': target.index})
+  let users = await db.search('users', {'name': target.index})
   let posts = await db.search('posts', {'title': target.index})
   searchpost = posts
   searchuser = users

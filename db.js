@@ -26,7 +26,7 @@ db.close = async function () {
 db.insert = async function (tableName, record) {
   const table = db.table(tableName)
   if (record.time == null) record.time = new Date()
-  let result = await table.insert(record)
+  let result = await table.insertOne(record)
   return result
 }
 
