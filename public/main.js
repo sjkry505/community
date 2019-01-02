@@ -22,10 +22,9 @@ window.onload = function () {
 
 blog.view.list = async function (posts, login) {
   if (login !== false) {
-    let user = await blog.model.getUser(login)
     document.querySelector('#userlist').innerHTML = `
       <div class="well" style="margin-top: 10px;wdith:100px">
-        <h2 style="margin-left:15px">${user.name}</h2>
+        <h2 style="margin-left:15px">${login}</h2>
           <div class="dropdown">
             <a id="ownpost" class="btn dropdown-toggle" type="button" data-toggle="dropdown" style="background:rgba(0,0,0,0)">Your post<span class="caret"></span></a>
             <ul class="dropdown-menu" style="height: 90px; overflow: auto">
@@ -65,6 +64,7 @@ blog.view.list = async function (posts, login) {
     </div>
     `)
   }
+  list.reverse()
   document.querySelector('#content').innerHTML = `
     <div class="well" style="width:70%;margin:10px auto 10px auto">
     <a data-toggle="modal" data-target="#postModal" style="margin: 10px 0 0 0;border: none;text-decoration: none; color: #111111">
@@ -127,7 +127,6 @@ blog.view.list = async function (posts, login) {
 }
 
 blog.view.show = async function (id) {
-  console.log(123)
   let post = await blog.model.getPost(id)
   document.querySelector('#content').innerHTML = `
     <div id="list${post.id}" style="margin-top:10px">
@@ -167,10 +166,10 @@ blog.view.edit = async function (id) {
                 <h1>${editor.title}</h1>
                 <form>
                   <div class="form-group">
-                    <textarea class="form-control" rows="5" id="edit${editor.id}" name="body" placeholder="Content">${editor.body}</textarea>
+                    <textarea class="form-control" rows="5" id="edit${id}" name="body" placeholder="Content">${editor.body}</textarea>
                   </div>
                   <div class="form-group">
-                    <input class="btn btn-default" data-dismiss="modal" type="button" onclick="blog.model.edit(${editor.id})" value="Confirm">
+                    <input class="btn btn-default" data-dismiss="modal" type="button" onclick="blog.model.edit(${id})" value="Confirm">
                   </div> 
                 </form>
               </div>
@@ -238,14 +237,15 @@ blog.view.search = async function () {
       let html = '<h3>post</h3>'
       for (let i of searchresult[0]) {
         html += `
-          <div class="well" style="width:80%;margin:0 auto 10px auto">
-            <a onclick="blog.view.show(${i.id})" style="text-decoration:none;color: #111111">
+          <a onclick="blog.view.show(${i._id})" style="text-decoration:none;color: #111111">
+            <div class="well" style="width:80%;margin:0 auto 10px auto">
+            
               <h1 style="margin: 0 0 0 15px;">${i.title}
                 <small><small>建立者:${i.owner}</small></small>
               </h1>
               <p style="margin: 10px 0 0 15px;" class="text-justify">${i.body}</p>
-            </a>
-          </div>
+            </div>
+          </a>
           `
       }
       html += `<h3>User</h3>`
@@ -346,7 +346,6 @@ blog.model.signup = async function () {
 blog.model.login = async function () {
   let account = document.querySelector('#user').value
   let password = document.querySelector('#user-password').value
-  let user = await blog.model.getUser(account)
   let r = await window.fetch('/login', {
     body: JSON.stringify({account: account, password: password}),
     method: 'POST'
@@ -358,7 +357,8 @@ blog.model.login = async function () {
   </div>`
   }
   if (r.status === 200) {
-    login = account
+    let user = await blog.model.getUser(account)
+    login = user.name
     document.querySelector('#logined').innerHTML = `
       <li><a class="btn btn-info btn-md" style="background-color:#272727;border: none"><span class="glyphicon glyphicon-user"></span>${user.name}</a></li>
       <li><a class="btn btn-info btn-md" onclick="blog.model.logout()" style="background-color:#272727;border: none"><span class="glyphicon glyphicon-log-in"></span> Log out</a></li>
@@ -386,26 +386,19 @@ blog.model.logout = async function () {
   window.onhashchange()
   return r
 }
+/*
+blog.view.logined = async function () {
+  let r = await window.fetch('/logined')
+  let user = await r.json()
+  console.log(user)
+  return user
+}
+*/
 
 blog.model.getUser = async function (user) {
   let r = await window.fetch('/user/' + user)
   let name = await r.json()
   return name
-}
-
-blog.model.friend = async function (user) {
-  let friend = await blog.model.getUser(user)
-  let r = await window.fetch('/addfriend', {
-    body: JSON.stringify({name: friend.name, account: login}),
-    method: 'POST'
-  })
-  document.querySelector(`#search${user}`).innerHTML = `
-    <h3 style="margin: 0 0 0 15px;">
-      <label style="width:70%">${friend.name}</label>
-      <button style="margin:0;width: 30%" value="已送出邀請"><button>
-    </h3>
-  `
-  return r
 }
 
 // model-search
