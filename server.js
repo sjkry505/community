@@ -8,6 +8,8 @@ const session = require('koa-session')
 
 const Koa = require('koa')
 const app = (module.exports = new Koa())
+const server = require('http').Server(app.callback())
+const io = require('socket.io')(server)
 
 app.keys = ['some secret hurr']
 
@@ -27,7 +29,6 @@ const CONFIG = {
 
 let searchpost = []
 let searchuser = []
-let length = 0
 
 app.use(logger())
 app.use(koaBody())
@@ -37,8 +38,10 @@ app.use(koaStatic('./public'))
 router
   .get('/list', list)
   .get('/post/:id', show)
+  .get('/message/:id', getmessage)
   .get('/user/:user', getuser)
   .get('/logined', logined)
+  .get('/messages/:id', messages)
   .get('/searchresult', searchresult)
   .post('/login', login)
   .post('/signup', signup)
@@ -47,6 +50,9 @@ router
   .post('/edit/:id', edit)
   .post('/remove/:id', remove)
   .post('/search', search)
+  .post('/insertmessage/:id', insertmessage)
+  .post('/editmessage/:id', editmessage)
+  .post('/removemessage/:id', removemessage)
 
 app.use(router.routes())
 app.use(koaJson())
@@ -72,9 +78,7 @@ async function show (ctx) {
 async function create (ctx) {
   let post = JSON.parse(ctx.request.body)
   post.owner = ctx.session.user
-  post.id = length
   await db.insert('posts', post)
-  length++
   ctx.status = 200
 }
 
@@ -90,6 +94,49 @@ async function remove (ctx) {
   let id = ctx.params.id
   await db.delete('posts', id)
   ctx.status = 200
+}
+
+async function insertmessage (ctx) {
+  let id = ctx.params.id
+  let message = JSON.parse(ctx.request.body)
+  message.owner = id
+  message.writer = ctx.session.user
+  await db.insert('messages', message)
+  ctx.status = 200
+}
+
+async function editmessage (ctx) {
+  let message = JSON.parse(ctx.request.body)
+  console.log(message)
+  let target = await db.findOne('messages', ctx.params.id)
+  console.log(target)
+  target.body = message.body
+  await db.update('messages', ctx.params.id, target)
+  ctx.status = 200
+}
+
+async function removemessage (ctx) {
+  let id = ctx.params.id
+  await db.delete('messages', id)
+  ctx.status = 200
+}
+
+async function messages (ctx) {
+  let id = ctx.params.id
+  let message = await db.findMessages('messages', id)
+  if (message) {
+    ctx.status = 200
+    ctx.body = message
+  }
+}
+
+async function getmessage (ctx) {
+  const id = ctx.params.id
+  const message = await db.findOne('messages', id)
+  if (message) {
+    ctx.body = message
+    ctx.status = 200
+  }
 }
 
 // user
@@ -151,9 +198,16 @@ async function searchresult (ctx) {
   ctx.body = [searchpost, searchuser]
 }
 
-// chat
+// chat-pair
 
-// pair
+io.on('connection', (socket) => {
+  console.log('a user connected')
+  socket.on('chat message', (msg) => {
+    if (msg !== '') {
+      io.emit('chat message', msg)
+    }
+  })
+})
 
 if (!module.parent) {
   app.listen(3000)

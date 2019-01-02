@@ -48,6 +48,12 @@ db.findUser = async function (tableName, user) {
   return result
 }
 
+db.findMessages = async function (tableName, id) {
+  const table = db.table(tableName)
+  let result = await table.find({'owner': id}).toArray()
+  return result
+}
+
 db.find = async function (tableName) {
   const table = db.table(tableName)
   let result = await table.find({}).toArray()
