@@ -48,9 +48,27 @@ db.findUser = async function (tableName, user) {
   return result
 }
 
+db.findFriend = async function (tableName, id) {
+  const table = db.table(tableName)
+  let result = await table.findOne({_id: new mongodb.ObjectID(id)})
+  return result.friend
+}
+
 db.findMessages = async function (tableName, id) {
   const table = db.table(tableName)
   let result = await table.find({'owner': id}).toArray()
+  return result
+}
+
+db.findRemind = async function (tableName, user) {
+  const table = db.table(tableName)
+  let result = await table.find({'owner': user}).toArray()
+  return result
+}
+
+db.addfriend = async function (tableName, id) {
+  const table = db.table(tableName)
+  let result = await table.findOne({_id: new mongodb.ObjectID(id)})
   return result
 }
 

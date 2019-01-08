@@ -8,9 +8,12 @@ let login = false
 let trigger = false
 
 window.onhashchange = async function () {
+  login = await blog.view.logined()
+  console.log(login)
   let r, post, message
   var tokens = window.location.hash.split('/')
   blog.view.userlist()
+  blog.view.friend()
   switch (tokens[0]) {
     case '#show':
       r = await window.fetch('/post/' + tokens[1])
@@ -19,9 +22,9 @@ window.onhashchange = async function () {
       break
     case '#edit':
       post = await blog.model.getPost(tokens[1])
-      if (login === post.owner) {
+      if (login.name === post.owner) {
         blog.view.edit(post)
-      } else if (login === false) {
+      } else if (login.name === false || login.name === undefined) {
         document.querySelector('#alert').innerHTML = `
           <div class="alert alert-danger alert-dismissible fade in">
             <a class="close" data-dismiss="alert" aria-label="close" onclick="blog.view.triggered()">&times;</a>
@@ -41,14 +44,14 @@ window.onhashchange = async function () {
       break
     case '#remove':
       post = await blog.model.getPost(tokens[1])
-      if (login === false) {
+      if (login.name === false || login.name === undefined) {
         document.querySelector('#alert').innerHTML = `
         <div class="alert alert-danger alert-dismissible fade in">
           <a class="close" data-dismiss="alert" aria-label="close" onclick="blog.view.triggered()">&times;</a>
           <strong>請先登入</strong>
         </div>
         `
-      } else if (login === post.owner) {
+      } else if (login.name === post.owner) {
         blog.model.remove(tokens[1])
         return r
       } else {
@@ -62,48 +65,64 @@ window.onhashchange = async function () {
       break
     case '#editmessage':
       message = await blog.model.getMessage(tokens[1])
-      if (login === message.writer) {
+      if (login.name === message.writer) {
         blog.view.editmessage(message)
-      } else if (login === false) {
+      } else if (login.name === false || login.name === undefined) {
         document.querySelector('#alert').innerHTML = `
           <div class="alert alert-danger alert-dismissible fade in">
             <a class="close" data-dismiss="alert" aria-label="close" onclick="blog.view.triggered()">&times;</a>
             <strong>請先登入</strong>
           </div>
         `
-        window.location.hash = ''
+        window.location.hash = `show/${message.owner}`
       } else {
         document.querySelector('#alert').innerHTML = `
           <div class="alert alert-danger alert-dismissible fade in">
             <a class="close" data-dismiss="alert" aria-label="close" onclick="blog.view.triggered()">&times;</a>
-            <strong>你沒有權限修改貼文</strong>
+            <strong>你沒有權限修改留言</strong>
           </div>
         `
-        window.location.hash = ''
+        window.location.hash = `show/${message.owner}`
       }
       break
     case '#removemessage':
       message = await blog.model.getMessage(tokens[1])
-      if (login === false) {
+      if (login.name === false || login.name === undefined) {
         document.querySelector('#alert').innerHTML = `
         <div class="alert alert-danger alert-dismissible fade in">
           <a class="close" data-dismiss="alert" aria-label="close" onclick="blog.view.triggered()">&times;</a>
           <strong>請先登入</strong>
         </div>
         `
-      } else if (login === message.writer) {
+      } else if (login.name === message.writer) {
         blog.model.removemessage(tokens[1])
       } else {
         document.querySelector('#alert').innerHTML = `
           <div class="alert alert-danger alert-dismissible fade in">
             <a class="close" data-dismiss="alert" aria-label="close" onclick="blog.view.triggered()">&times;</a>
-            <strong>你沒有權限刪除貼文</strong>
+            <strong>你沒有權限刪除留言</strong>
           </div>`
       }
-      window.location.hash = ''
+      window.location.hash = `show/${message.owner}`
       break
     case '#message':
-      blog.model.message(tokens[1])
+      if (login.name === false || login.name === undefined) {
+        document.querySelector('#alert').innerHTML = `
+          <div class="alert alert-danger alert-dismissible fade in">
+            <a class="close" data-dismiss="alert" aria-label="close" >&times;</a>
+            <strong>請先登入</strong>
+          </div>
+        `
+        window.location.hash = `show/${tokens[1]}`
+      } else {
+        blog.model.message(tokens[1])
+      }
+      break
+    case '#sendremind':
+      blog.model.sendremind(tokens[1])
+      break
+    case '#remind':
+      blog.model.addfriend(tokens[1])
       break
     default:
       r = await window.fetch('/list/')
@@ -113,15 +132,34 @@ window.onhashchange = async function () {
   }
   trigger = false
   if (login) {
+    let reminds = await blog.model.getRemind(login)
     document.querySelector('#logined').innerHTML = `
-      <li><a class="btn btn-info btn-md" style="background-color:#272727;border: none"><span class="glyphicon glyphicon-user"></span>${login}</a></li>
+      <li class="dropdown">
+        <a class="btn btn-info btn-md dropdown-toggle" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color:#272727;border: none">
+          <span class="glyphicon glyphicon-bullhorn"></span>
+        </a>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          ${(() => {
+            let html = ''
+            if (reminds.length === 0) {
+              html += `<p class="dropdown-item">沒有通知</p>`
+            } else {
+              for (let remind of reminds) {
+                if (remind.owner === login.account) {
+                  html += `<p class="dropdown-item">${remind.sender}加你好友<button onclick="window.location.hash = '#remind/${remind._id}'" class="btn btn-primary">確認</button></p>`
+                }
+              }
+            }
+            return html
+          })()}
+        </div></li>
+      <li><a class="btn btn-info btn-md" style="background-color:#272727;border: none"><span class="glyphicon glyphicon-user"></span>${login.name}</a></li>
       <li><a class="btn btn-info btn-md" onclick="blog.model.logout()" style="background-color:#272727;border: none"><span class="glyphicon glyphicon-log-in"></span> Log out</a></li>
     `
   }
 }
 
 window.onload = function () {
-  blog.view.logined()
   window.onhashchange()
 }
 
@@ -213,30 +251,49 @@ blog.view.userlist = async function () {
   let r = await window.fetch('/list/')
   let posts = await r.json()
   posts.reverse()
-  if (login !== false || login !== undefined) {
+  if (login.name !== false || login.name !== undefined) {
     document.querySelector('#userlist').innerHTML = `
       <div class="well" style="margin-top: 10px;">
-        <h2 style="margin-left:15px">${login}</h2>
+        <h2 style="margin-left:15px">${login.name}</h2>
           <div class="dropdown">
             <a id="ownpost" class="btn dropdown-toggle" type="button" data-toggle="dropdown" style="background:rgba(0,0,0,0)">Your post<span class="caret"></span></a>
             <ul class="dropdown-menu" style="height: 90px; overflow: auto">
             ${(() => {
               let html = ''
               for (let post of posts) {
-                if (post.owner === login) {
+                if (post.owner === login.name) {
                   html += `<li style="height:30px; margin:0"><a href="#show/${post._id}">${post.title}</a><li>`
                 }
               }
               return html
             })()}
             </ul>
-          </div
+          </div>
         </div>
     `
   }
-  if (login === false || login === undefined) {
+  if (login.name === false || login.name === undefined) {
     document.querySelector('#userlist').innerHTML = ''
   }
+}
+
+blog.view.friend = async function () {
+  let r = await window.fetch('/friend/')
+  let friends = await r.json()
+  console.log(friends)
+  document.querySelector('#friend').innerHTML = `
+    <div class="well" style="margin-top: 10px;">
+      <ul class="list-group">
+      ${(() => {
+        let html = ''
+        for (let friend of friends) {
+          html += `<li class="list-group-item"><a href="#chat/${friend.account}-${login.account}">${friend.name}</a></li>`
+        }
+        return html
+      })()}
+      </ul>
+    </div>
+  `
 }
 
 blog.view.show = async function (post) {
@@ -360,26 +417,6 @@ blog.view.editmessage = async function (message) {
   `
 }
 
-blog.view.remove = async function (id) {
-  let post = await blog.model.getPost(id)
-  if (login === false) {
-    document.querySelector('#alert').innerHTML = `
-    <div class="alert alert-danger alert-dismissible fade in">
-      <a class="close" data-dismiss="alert" aria-label="close" onclick="blog.view.triggered()">&times;</a>
-      <strong>請先登入</strong>
-    </div>
-    `
-  } else if (login === post.owner) {
-    blog.model.remove(id)
-  } else {
-    document.querySelector('#alert').innerHTML = `
-      <div class="alert alert-danger alert-dismissible fade in">
-        <a class="close" data-dismiss="alert" aria-label="close" onclick="blog.view.triggered()">&times;</a>
-        <strong>你沒有權限刪除貼文</strong>
-      </div>`
-  }
-}
-
 blog.view.triggered = () => {
   trigger = false
 }
@@ -388,7 +425,9 @@ blog.view.triggered = () => {
 // view-search
 
 blog.view.search = async function () {
+  let tag = false
   let r = await window.fetch('/searchresult')
+  let user = await blog.model.getUser(login.account)
   let searchresult = await r.json()
   document.querySelector('#content').innerHTML = `
     <h1>搜尋結果：</h1>
@@ -396,8 +435,8 @@ blog.view.search = async function () {
       let html = '<h3>Post</h3>'
       for (let i of searchresult[0]) {
         html += `
-          <a onclick="blog.view.show(${i._id})" style="text-decoration:none;color: #111111">
-            <div class="well" style="width:80%;margin:0 auto 10px auto">
+          <a href="/#show/${i._id}" style="text-decoration:none;color: #111111">
+            <div class="well" style="width:100%;margin:0 auto 10px auto">
             
               <h1 style="margin: 0 0 0 15px;">${i.title}
                 <small><small>建立者:${i.owner}</small></small>
@@ -411,9 +450,20 @@ blog.view.search = async function () {
       for (let i of searchresult[1]) {
         html += `
           <div class="well" style="width:30%;margin-buttom:10px" id="search${i.name}">
-            <h3 style="margin: 0 0 0 15px;">${i.name}</h3>
+            <h3 style="margin: 0 0 0 15px;">${i.name}
+        `
+        for (let friend of user.friend) {
+          if (friend === i.account) {
+            tag = true
+          }
+        }
+        if (tag === false) {
+          html += `<a href="#sendremind/${i.account}" class="close" style="border: none"><span class="glyphicon glyphicon-plus"></span></a></h3>
           </div>
         `
+        } else {
+          html += `</h3></div>`
+        }
       }
       return html
     }
@@ -542,7 +592,7 @@ blog.model.login = async function () {
   }
   if (r.status === 200) {
     let user = await blog.model.getUser(account)
-    login = user.name
+    login = user
     document.querySelector('#logined').innerHTML = `
       <li><a class="btn btn-info btn-md" style="background-color:#272727;border: none"><span class="glyphicon glyphicon-user"></span>${user.name}</a></li>
       <li><a class="btn btn-info btn-md" onclick="blog.model.logout()" style="background-color:#272727;border: none"><span class="glyphicon glyphicon-log-in"></span> Log out</a></li>
@@ -555,7 +605,7 @@ blog.model.login = async function () {
 }
 
 blog.model.logout = async function () {
-  let account = login
+  let account = login.name
   let r = await window.fetch('/logout', {
     body: JSON.stringify({account: account}),
     method: 'POST'
@@ -575,8 +625,8 @@ blog.view.logined = async function () {
   let r = await window.fetch('/logined')
   let user = await r.json()
   if (user) {
-    login = user.user
-    return true
+    login = user
+    return login
   } else return false
 }
 
@@ -584,6 +634,31 @@ blog.model.getUser = async function (user) {
   let r = await window.fetch('/user/' + user)
   let name = await r.json()
   return name
+}
+
+blog.model.sendremind = async function (user) {
+  let r = await window.fetch('/sendremind/' + user, {
+    body: JSON.stringify({'sender': login.name, 'owner': user, 'sendaccount': login.account}),
+    method: 'POST'
+  })
+  window.location.hash = ''
+  return r
+}
+
+blog.model.getRemind = async function (user) {
+  let r = await window.fetch('/remind/' + user.account)
+  let remind = await r.json()
+  console.log(remind)
+  return remind
+}
+
+blog.model.addfriend = async function (id) {
+  let r = await window.fetch('/remind/' + id, {
+    body: JSON.stringify({'id': id}),
+    method: 'POST'
+  })
+  window.location.hash = ''
+  return r
 }
 
 // model-search
